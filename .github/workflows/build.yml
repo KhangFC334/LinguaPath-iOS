@@ -1,0 +1,41 @@
+name: Build LinguaPath IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract source
+        run: |
+          mkdir extracted
+          unzip -q *.zip -d extracted
+
+      - name: Build iOS
+        run: |
+          PROJECT=$(find extracted -name "*.xcodeproj" | head -1)
+
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme LinguaPath \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/LinguaPath.app Payload/
+          zip -qr LinguaPath.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: LinguaPath-IPA
+          path: LinguaPath.ipa
